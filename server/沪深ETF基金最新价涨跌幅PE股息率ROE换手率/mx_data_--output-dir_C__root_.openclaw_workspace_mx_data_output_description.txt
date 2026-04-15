@@ -1,0 +1,8 @@
+金融数据查询结果说明
+========================================
+查询内容: --output-dir C:\root\.openclaw\workspace\mx_data\output
+数据文件路径: 沪深ETF基金最新价涨跌幅PE股息率ROE换手率\mx_data_--output-dir_C__root_.openclaw_workspace_mx_data_output.xlsx
+描述文件路径: 沪深ETF基金最新价涨跌幅PE股息率ROE换手率\mx_data_--output-dir_C__root_.openclaw_workspace_mx_data_output_description.txt
+数据行数: 4
+表数量: 1
+Sheet 列表: Root的营业收入、净利润等

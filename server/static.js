@@ -12,8 +12,8 @@ const PROXY = 'http://localhost:3099';
 // 用户名: zhu
 // 密码: 2026chan
 // ============================================================
-const AUTH_USER = 'zhu';
-const AUTH_PASS = '2026chan';
+const AUTH_USER = 'zyl884495';
+const AUTH_PASS = '884495';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

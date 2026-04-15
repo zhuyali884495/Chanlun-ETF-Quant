@@ -26,9 +26,9 @@ start /min cmd /c "node C:\Users\34856\chan-theory-h5\server\static.js"
 echo    前端已启动
 :start_tunnel
 
-:: 启动 serveo 隧道
-echo [3/3] 启动 serveo 隧道...
-start /min cmd /c "ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R chan-theory-h5:80:localhost:5173 serveo.net"
+:: 启动 localhost.run 隧道
+echo [3/3] 启动 localhost.run 隧道...
+start /min cmd /c "ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 0:localhost:5173 nokey@localhost.run"
 echo.
 
 :: 等待隧道建立
@@ -38,15 +38,14 @@ echo ========================================
 echo   启动完成！
 echo ========================================
 echo.
-echo 访问地址: https://chan-theory-h5.serveo.net
-echo (或使用 serveo 分配的其他 URL)
+echo 访问地址: (查看命令行输出的 https://*.lhr.life URL)
 echo.
 echo 访问凭证:
-echo   用户名: zhu
-echo   密 码: 2026chan
+echo   用户名: zyl884495
+echo   密 码: 884495
 echo.
-echo 注意: serveo URL 在隧道重启后会变化
-echo       如需固定 URL，请注册 serveo.net 账号
+echo 注意: localhost.run URL 每次重启后会变化
+echo       推荐使用 Chrome 隐身模式访问，避免缓存旧凭证
 echo ========================================
 echo.
 echo 按任意键打开管理面板...

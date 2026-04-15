@@ -5,7 +5,7 @@ import { THEMES, applyTheme, getStoredTheme, setStoredTheme } from '../theme.js'
 function MenuIcon({ name }) {
   const icons = {
     home: '🏠', chan: '📈', sentiment: '🌡️', grid: '📊',
-    capital: '💰', risk: '🛡️', select: '🔍', portfolio: '💼',
+    capital: '💰', risk: '🛡️', select: '🔍', stockpick: '🎯', portfolio: '💼',
     settings: '⚙️', alerts: '🔔',
   };
   return <span style={{ marginRight: 8 }}>{icons[name] || '•'}</span>;
@@ -54,11 +54,13 @@ export default function Layout({ children, activeTab, onTabChange, alertCount, o
         const found = CORE_ETFS.find(etf =>
           etf.code.includes(q) || etf.name.toUpperCase().includes(q)
         );
-        if (found && onSearch) { onSearch(found.code); setSearchVal(''); }
-        else if (!found) {
-          searchRef.current?.setCustomValidity('未找到标的');
-          searchRef.current?.reportValidity();
-          setTimeout(() => { if (searchRef.current) searchRef.current.setCustomValidity(''); }, 1500);
+        if (found && onSearch) {
+          onSearch(found.code);
+          setSearchVal('');
+        } else if (onSearch) {
+          // 支持任意股票代码（如 SH000001 / 600519 / 300750）
+          onSearch(q);
+          setSearchVal('');
         }
       }
     };
@@ -72,6 +74,7 @@ export default function Layout({ children, activeTab, onTabChange, alertCount, o
     { key: 'chan', label: '缠论分析' },
     { key: 'sentiment', label: '景气度打分' },
     { key: 'grid', label: '网格策略' },
+    { key: 'stockpick', label: '选股' },
     { key: 'capital', label: '资金研判' },
     { key: 'risk', label: '风险测评' },
     { key: 'select', label: '标的筛选' },
@@ -192,7 +195,7 @@ export default function Layout({ children, activeTab, onTabChange, alertCount, o
               fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1,
             }}>☰</button>
           )}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-on-primary)' }}>
               {menuItems.find(m => m.key === activeTab)?.label || '首页'}
             </span>
@@ -200,23 +203,39 @@ export default function Layout({ children, activeTab, onTabChange, alertCount, o
 
           {/* 搜索框（非移动端） */}
           {!isMobile && (
-            <div style={{ flex: 1, maxWidth: 280, position: 'relative' }}>
-              <input
-                ref={searchRef}
-                value={searchVal}
-                onChange={e => setSearchVal(e.target.value)}
-                placeholder="搜索ETF代码/名称 → 回车跳转"
-                style={{
-                  width: '100%', padding: '6px 32px 6px 10px',
-                  borderRadius: 8, border: 'none',
-                  background: 'rgba(255,255,255,0.2)',
-                  color: 'var(--text-on-primary)', fontSize: 12,
-                  boxSizing: 'border-box', outline: 'none',
-                }}
-                onFocus={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
-                onBlur={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
-              />
-              <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'rgba(255,255,255,0.7)', pointerEvents: 'none' }}>🔍</span>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: 320 }}>
+                <input
+                  ref={searchRef}
+                  value={searchVal}
+                  onChange={e => setSearchVal(e.target.value)}
+                  placeholder="搜索股票/ETF代码或名称"
+                  style={{
+                    width: '100%', padding: '6px 80px 6px 12px',
+                    borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)',
+                    background: 'rgba(255,255,255,0.15)',
+                    color: 'var(--text-on-primary)', fontSize: 13,
+                    boxSizing: 'border-box', outline: 'none',
+                  }}
+                  onFocus={e => { e.target.style.background = 'rgba(255,255,255,0.25)'; e.target.style.borderColor = 'rgba(255,255,255,0.5)'; }}
+                  onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.15)'; e.target.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+                />
+                <button
+                  onClick={() => {
+                    const q = searchVal.trim().toUpperCase();
+                    if (!q) return;
+                    const found = CORE_ETFS.find(etf => etf.code.includes(q) || etf.name.toUpperCase().includes(q));
+                    if (found) { onSearch?.(found.code); setSearchVal(''); }
+                    else { onSearch?.(q); setSearchVal(''); }
+                  }}
+                  style={{
+                    position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+                    padding: '4px 10px', borderRadius: 6,
+                    background: 'var(--primary)', border: 'none',
+                    color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >搜索</button>
+              </div>
             </div>
           )}
 

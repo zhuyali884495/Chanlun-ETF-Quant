@@ -5,6 +5,8 @@ import HomePage from './components/HomePage.jsx';
 import Portfolio from './components/Portfolio.jsx';
 import Alerts from './components/Alerts.jsx';
 import { SentimentPage, GridPage, CapitalPage, RiskPage, SelectPage, SettingsPage } from './components/Page.jsx';
+import StockAnalysis from './components/StockAnalysis.jsx';
+import StockSelect from './components/StockSelect.jsx';
 import { CORE_ETFS } from './constants.js';
 import { fetchChanAnalysis } from './api/index.js';
 
@@ -152,9 +154,16 @@ function ChanTab({ searchTarget, onSearchUsed, onAlertSetup }) {
   // 搜索跳转
   useEffect(() => {
     if (searchTarget) {
-      const etf = CORE_ETFS.find(e => e.code === searchTarget) || CORE_ETFS.find(e => e.code === '515880') || CORE_ETFS[0];
-      setSelected(etf);
-      analyze(etf.code, cycle);
+      const etf = CORE_ETFS.find(e => e.code === searchTarget);
+      if (etf) {
+        setSelected(etf);
+        analyze(etf.code, cycle);
+      } else {
+        // 支持任意股票代码（如 SH000001 / 600519）
+        const code = searchTarget.toUpperCase();
+        setSelected({ code, name: code });
+        analyze(code, cycle);
+      }
       onSearchUsed?.();
     }
   }, [searchTarget]);
@@ -316,7 +325,7 @@ export default function App() {
 
   const handleSearch = (code) => {
     setSearchTarget(code);
-    setTab('chan');
+    setTab('analysis');
   };
 
   // 持仓模块 → 跳转其他分析页面
@@ -329,6 +338,8 @@ export default function App() {
   return (
     <Layout activeTab={tab} onTabChange={setTab} alertCount={alertCount} onSearch={handleSearch}>
       {tab === 'home' && <HomePage />}
+      {tab === 'analysis' && searchTarget && <StockAnalysis code={searchTarget} />}
+      {tab === 'stockpick' && <StockSelect onSelectETF={(code) => { setSearchTarget(code); setTab('analysis'); }} />}
       {tab === 'chan' && <ChanTab searchTarget={searchTarget} onSearchUsed={() => setSearchTarget(null)} />}
       {tab === 'sentiment' && <SentimentPage navTarget={navTarget} onNavTargetUsed={() => setNavTarget(null)} />}
       {tab === 'grid' && <GridPage navTarget={navTarget} onNavTargetUsed={() => setNavTarget(null)} />}

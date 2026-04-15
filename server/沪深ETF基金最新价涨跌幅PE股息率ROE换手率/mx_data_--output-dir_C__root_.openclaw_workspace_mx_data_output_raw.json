@@ -1,0 +1,267 @@
+{
+  "success": true,
+  "status": 0,
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "requestId": null,
+    "message": "OK",
+    "status": 0,
+    "code": 0,
+    "data": {
+      "protocolType": "SEARCH_DATA",
+      "id": "3567a463-7bf5-43bd-ab27-066032963481",
+      "refSeq": null,
+      "keyEntityList": null,
+      "searchDataResultDTO": {
+        "questionId": "b9c319d8-28a4-4f3f-8952-b92cdf3dc64e",
+        "dataTableDTOList": [
+          {
+            "code": "10000137636.FXR",
+            "entityName": "Root",
+            "table": {
+              "100000000010016": [
+                "106.6亿元",
+                "79.59亿元",
+                "52.42亿元",
+                "25.08亿元"
+              ],
+              "100000000009947": [
+                "2.833亿元",
+                "2.487亿元",
+                "2.892亿元",
+                "1.321亿元"
+              ],
+              "100000000010047": [
+                "2.833亿元",
+                "2.487亿元",
+                "2.892亿元",
+                "1.321亿元"
+              ],
+              "headName": [
+                "2025年报",
+                "2025三季报",
+                "2025中报",
+                "2025一季报"
+              ]
+            },
+            "rawTable": {
+              "100000000010016": [
+                "10663392480",
+                "7958870550",
+                "5242242780",
+                "2508063080"
+              ],
+              "100000000009947": [
+                "283260640",
+                "248692500",
+                "289207440",
+                "132078880"
+              ],
+              "100000000010047": [
+                "283260640",
+                "248692500",
+                "289207440",
+                "132078880"
+              ],
+              "headName": [
+                "2025年报",
+                "2025三季报",
+                "2025中报",
+                "2025一季报"
+              ]
+            },
+            "truncateRawTable": {},
+            "nameMap": {
+              "100000000010016": "营业收入",
+              "headNameSub": "数据来源",
+              "100000000009947": "净利润",
+              "100000000010047": "归属于母公司股东的净利润"
+            },
+            "headNameMap": {},
+            "field": {
+              "returnCode": "100000000010016",
+              "returnName": "营业收入",
+              "classCode": "007101",
+              "checkedRelatedIndicators": true,
+              "startDate": "2025-04-15 00:00:00",
+              "endDate": "2026-04-15 00:00:00",
+              "fuzzy": true,
+              "dateGranularity": "QUARTER",
+              "defineType": 0,
+              "isLoopN": false,
+              "fixedParamValue": "type=1,ItemsCode=9",
+              "quantType": "1",
+              "isGroup": false,
+              "returnSourceCode": "OPERATEREVE",
+              "returnSourceName": "营业收入",
+              "graph": "1",
+              "unit": "1",
+              "tableType": "1",
+              "unitName": "元",
+              "unitDesc": "101:元:元"
+            },
+            "entityCodes": [
+              "10000137636.FXR"
+            ],
+            "macroAttributeExcelMap": {},
+            "fieldSet": [
+              {
+                "returnCode": "100000000010016",
+                "returnName": "营业收入",
+                "classCode": "007101",
+                "checkedRelatedIndicators": true,
+                "startDate": "2025-04-15 00:00:00",
+                "endDate": "2026-04-15 00:00:00",
+                "fuzzy": true,
+                "dateGranularity": "QUARTER",
+                "defineType": 0,
+                "isLoopN": false,
+                "fixedParamValue": "type=1,ItemsCode=9",
+                "quantType": "1",
+                "isGroup": false,
+                "returnSourceCode": "OPERATEREVE",
+                "returnSourceName": "营业收入",
+                "graph": "1",
+                "unit": "1",
+                "tableType": "1",
+                "unitName": "元",
+                "unitDesc": "101:元:元"
+              },
+              {
+                "returnCode": "100000000010047",
+                "returnName": "归属于母公司股东的净利润",
+                "classCode": "007101",
+                "checkedRelatedIndicators": true,
+                "startDate": "2025-04-15 00:00:00",
+                "endDate": "2026-04-15 00:00:00",
+                "fuzzy": true,
+                "dateGranularity": "QUARTER",
+                "defineType": 0,
+                "isLoopN": false,
+                "fixedParamValue": "type=1,ItemsCode=61",
+                "quantType": "1",
+                "isGroup": false,
+                "returnSourceCode": "PARENTNETPROFIT",
+                "returnSourceName": "归属于母公司股东的净利润",
+                "graph": "1",
+                "unit": "1",
+                "tableType": "1",
+                "unitName": "元",
+                "unitDesc": "101:元:元"
+              },
+              {
+                "returnCode": "100000000009947",
+                "returnName": "净利润",
+                "classCode": "007101",
+                "checkedRelatedIndicators": true,
+                "startDate": "2025-04-15 00:00:00",
+                "endDate": "2026-04-15 00:00:00",
+                "fuzzy": true,
+                "dateGranularity": "QUARTER",
+                "defineType": 0,
+                "isLoopN": false,
+                "fixedParamValue": "type=1,ItemsCode=60",
+                "quantType": "1",
+                "isGroup": false,
+                "returnSourceCode": "NETPROFIT",
+                "returnSourceName": "净利润",
+                "graph": "1",
+                "unit": "1",
+                "tableType": "1",
+                "unitName": "元",
+                "unitDesc": "101:元:元"
+              }
+            ],
+            "dataTableType": "NORM_TABLE",
+            "rowInfo": {},
+            "colInfo": {},
+            "indicatorOrder": [
+              "100000000010016",
+              "100000000009947",
+              "100000000010047"
+            ],
+            "tipFlags": [],
+            "dataType": "数据浏览器",
+            "title": "Root的营业收入、净利润等",
+            "hasThumbnail": true,
+            "indicatorLimited": false,
+            "dataPositionEnum": "MetricLeftTimeTop",
+            "orderCol": {},
+            "jumpUrlList": [
+              {
+                "choiceUrl": "EM://stockdatacenter?type=browser&modType=Issuer&code=10000137636.FXR&indId=100000000010016|100:2025-03-31|115:1,100000000010016|100:2025-06-30|115:1,100000000010016|100:2025-09-30|115:1,100000000010016|100:2025-12-31|115:1,100000000009947|100:2025-03-31|115:1,100000000009947|100:2025-06-30|115:1,100000000009947|100:2025-09-30|115:1,100000000009947|100:2025-12-31|115:1,100000000010047|100:2025-03-31|115:1,100000000010047|100:2025-06-30|115:1,100000000010047|100:2025-09-30|115:1,100000000010047|100:2025-12-31|115:1",
+                "typeName": "发行人浏览器"
+              }
+            ],
+            "dataTypeEnum": "DATA_BROWSER",
+            "dateRuleSet": [],
+            "freqConvert": false,
+            "deleteInfo": [],
+            "macroCodeMap": {},
+            "entityTagDTO": {
+              "entityId": "10000137636FXR",
+              "entityType": "FXR",
+              "entityTypeCode": "FXR",
+              "entityTypeName": "发行人",
+              "classCode": "016001",
+              "className": "股票发行人",
+              "fullName": "Root",
+              "shortName": "Root",
+              "correct": false,
+              "hasKLine": false,
+              "valuation": false
+            },
+            "entityTagDTOList": [
+              {
+                "entityId": "10000137636FXR",
+                "entityType": "FXR",
+                "entityTypeCode": "FXR",
+                "entityTypeName": "发行人",
+                "classCode": "016001",
+                "className": "股票发行人",
+                "fullName": "Root",
+                "shortName": "Root",
+                "correct": false,
+                "hasKLine": false,
+                "valuation": false
+              }
+            ],
+            "indexTable": false,
+            "edbThirdData": false,
+            "dataUpdate": {
+              "2025年报": false
+            },
+            "supportsTimeSeries": false,
+            "estimatedTokens": 0,
+            "summaryTips": {
+              "periodicalReport": null
+            },
+            "nestEntityListMap": {},
+            "excelTimeTruncate": false,
+            "frontendEntityName": "",
+            "frontendEntityCode": "",
+            "frontendTitle": "",
+            "frontendDesc": "",
+            "indicatorCount": 0,
+            "fieldParameterStr": "",
+            "tdayEnum": "NORMAL"
+          }
+        ],
+        "condition": {
+          "search_data_task_0": [
+            "Root",
+            "营业收入净利润归属于母公司股东的净利润",
+            "2026-04-15至2026-04-15"
+          ]
+        },
+        "entityTagDTOList": []
+      },
+      "entityName": null,
+      "message": null,
+      "tableTruncated": false
+    },
+    "stack": null
+  },
+  "requestId": "082fcb44e4f74817bc5bdf08ff651dc1"
+}
