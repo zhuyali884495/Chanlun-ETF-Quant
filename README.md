@@ -57,9 +57,7 @@ A 股散户炒 ETF，最头疼三件事：
 
 ## 🖥️ 效果演示
 
-> 📹 完整演示视频（265MB）：`结合了妙想技能搭建的开源项目.mp4`
->
-> Bilibili 在线观看：[【全程实战】基于妙想技能包的缠论ETF量化系统](https://www.bilibili.com)
+> 📹 完整演示视频（2分45秒）：[【全程实战】基于妙想技能包的缠论ETF量化系统](https://www.bilibili.com/video/BV1egdvBZEuv/)
 
 ---
 
