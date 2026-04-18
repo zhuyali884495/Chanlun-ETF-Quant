@@ -11,21 +11,22 @@ const path = require('path');
 const fs = require('fs');
 const { ChanEngine } = require('./engine');
 
-// ─── MX_DATA skill路径 ───────────────────────────────────────
-const MX_DATA_ALT = 'C:\\Users\\34856\\.openclaw\\workspace\\skills\\mx-data\\mx_data.py';
-const PYTHON = 'C:\\Users\\34856\\AppData\\Local\\Programs\\Python\\Python312\\python.exe';
+// ─── MX_DATA skill路径（Ubuntu服务器路径）────────────────────────────
+const MX_DATA = '/home/ubuntu/mx-data/mx_data.py';
+const OUT_DIR = '/home/ubuntu/.mx_data/output';
+const PYTHON = '/usr/bin/python3';
 
 // ─── 调用mx-data Python脚本（5秒超时+降级） ─────────────────
 function callMxData(query) {
-  const timeoutMs = 5000;
+  const timeoutMs = 8000;
   return Promise.race([
     new Promise((resolve, reject) => {
-      if (!fs.existsSync(MX_DATA_ALT)) {
-        reject(new Error('mx-data skill未找到'));
+      if (!fs.existsSync(MX_DATA)) {
+        reject(new Error('mx-data skill未找到: ' + MX_DATA));
         return;
       }
-      const apiKey = process.env.MX_APIKEY || 'YOUR_MX_APIKEY';
-      const proc = spawn(PYTHON, [MX_DATA_ALT, query], {
+      const apiKey = process.env.MX_APIKEY || 'mkt_y2fWnSXUku-xIeC8e8MyDxaYU_ObOFz78QkMBLb4jbE';
+      const proc = spawn.spawn(PYTHON, [MX_DATA, '--output-dir', OUT_DIR, query], {
         env: { ...process.env, MX_APIKEY: apiKey, PYTHONIOENCODING: 'utf-8' },
       });
       let stdout = '', stderr = '';
@@ -36,7 +37,7 @@ function callMxData(query) {
         else resolve(stdout);
       });
       proc.on('error', reject);
-      // 强制5秒kill
+      // 强制kill（与Promise超时一致）
       setTimeout(() => { try { proc.kill('SIGTERM'); } catch {} }, timeoutMs);
     }),
     new Promise((_, reject) => setTimeout(() => reject(new Error('mx-data timeout')), timeoutMs))
@@ -45,7 +46,7 @@ function callMxData(query) {
 
 // ─── 解析JSON输出文件 ────────────────────────────────────────
 function parseMxDataJson(query) {
-  const outDir = 'C:\\root\\.openclaw\\workspace\\mx_data\\output';
+  const outDir = OUT_DIR;
   if (!fs.existsSync(outDir)) return null;
   const files = fs.readdirSync(outDir).filter(f => f.endsWith('_raw.json'));
   const latest = files.sort((a, b) => fs.statSync(path.join(outDir, b)).mtime - fs.statSync(path.join(outDir, a)).mtime)[0];

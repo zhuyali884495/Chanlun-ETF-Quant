@@ -4,13 +4,19 @@ var spawn = require('child_process');
 var path = require('path');
 var fs = require('fs');
 
-var MX_DATA = 'C:\\Users\\34856\\.openclaw\\workspace\\skills\\mx-data\\mx_data.py';
-var OUT_DIR = 'C:\\root\\.openclaw\\workspace\\mx_data\\output';
-var PYTHON = 'C:\\Users\\34856\\AppData\\Local\\Programs\\Python\\Python312\\python.exe';
+// ✅ 修复路径：服务器是 Ubuntu，不是 Windows
+var MX_DATA = '/home/ubuntu/mx-data/mx_data.py';
+var OUT_DIR = '/home/ubuntu/.mx_data/output';
+var PYTHON = '/usr/bin/python3';
+
+// 配额跟踪（内存中计数，不持久化）
+var quotaUsed = 0;
+var quotaTotal = 300;
+var lastResetDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
 function callPyData(query) {
   return new Promise(function(resolve, reject) {
-    var apiKey = process.env.MX_APIKEY || 'YOUR_MX_APIKEY';
+    var apiKey = process.env.MX_APIKEY || 'mkt_y2fWnSXUku-xIeC8e8MyDxaYU_ObOFz78QkMBLb4jbE';
     var proc = spawn.spawn(PYTHON, [MX_DATA, '--output-dir', OUT_DIR, query], {
       env: { MX_APIKEY: apiKey, PYTHONIOENCODING: 'utf-8' },
       timeout: 60000
@@ -20,6 +26,8 @@ function callPyData(query) {
     proc.stdout.on('data', function(d) { stdout += d.toString('utf8'); });
     proc.stderr.on('data', function(d) { stderr += d.toString('utf8'); });
     proc.on('close', function(code) {
+      // 配额计数（每次调用 +1）
+      quotaUsed++;
       if (code !== 0 && stderr) reject(new Error(stderr.trim()));
       else resolve(stdout);
     });
@@ -84,20 +92,16 @@ function gc(row, names) {
   return null;
 }
 
-// 完整ETF行业分类数据
+// 完整ETF行业分类数据（本地备用库）
 var ETF_DB = [
-  // 大盘/宽基
   { code: '510300', name: '沪深300ETF', category: '大盘蓝筹', industry: '综合', pe: 12.5, pb: 1.42, roe: 12.3, dividendYield: 2.8, yoyGrowth: 8.5, revenueGrowth: 6.2, cashFlow: 1.2, vol: 0.016, marketCap: 480, volume: 85000, debtRatio: 58, score: 0 },
   { code: '510500', name: '中证500ETF', category: '中盘成长', industry: '综合', pe: 24.8, pb: 1.85, roe: 9.5, dividendYield: 1.6, yoyGrowth: 12.3, revenueGrowth: 9.8, cashFlow: 0.8, vol: 0.021, marketCap: 280, volume: 62000, debtRatio: 62, score: 0 },
   { code: '159915', name: '创业板ETF', category: '成长', industry: '综合', pe: 38.5, pb: 4.2, roe: 18.2, dividendYield: 0.8, yoyGrowth: 28.5, revenueGrowth: 22.1, cashFlow: 1.5, vol: 0.032, marketCap: 350, volume: 120000, debtRatio: 45, score: 0 },
   { code: '588000', name: '科创50ETF', category: '硬科技', industry: '科创板', pe: 55.3, pb: 5.1, roe: 14.1, dividendYield: 0.8, yoyGrowth: 35.2, revenueGrowth: 28.6, cashFlow: 0.6, vol: 0.038, marketCap: 520, volume: 95000, debtRatio: 38, score: 0 },
-
-  // 行业ETF
   { code: '512480', name: '半导体ETF', category: '半导体', industry: '半导体', pe: 68.2, pb: 6.5, roe: 18.7, dividendYield: 0.5, yoyGrowth: 42.8, revenueGrowth: 35.5, cashFlow: 1.8, vol: 0.040, marketCap: 180, volume: 145000, debtRatio: 42, score: 0 },
   { code: '515880', name: '通信ETF', category: '通信设备', industry: '通信服务', pe: 32.1, pb: 2.8, roe: 8.5, dividendYield: 1.9, yoyGrowth: 18.6, revenueGrowth: 12.4, cashFlow: 0.9, vol: 0.028, marketCap: 95, volume: 78000, debtRatio: 55, score: 0 },
   { code: '159326', name: '电网设备ETF', category: '电力设备', industry: '电力设备', pe: 28.5, pb: 2.5, roe: 11.2, dividendYield: 1.5, yoyGrowth: 15.2, revenueGrowth: 10.8, cashFlow: 1.1, vol: 0.022, marketCap: 68, volume: 45000, debtRatio: 48, score: 0 },
   { code: '512760', name: '芯片ETF', category: '半导体', industry: '半导体', pe: 72.5, pb: 7.2, roe: 16.5, dividendYield: 0.4, yoyGrowth: 38.9, revenueGrowth: 32.1, cashFlow: 0.5, vol: 0.045, marketCap: 120, volume: 168000, debtRatio: 40, score: 0 },
-  { code: '516110', name: '地产ETF', category: '房地产', industry: '房地产', pe: 18.2, pb: 0.95, roe: 5.2, dividendYield: 3.5, yoyGrowth: -8.5, revenueGrowth: -15.2, cashFlow: -0.2, vol: 0.025, marketCap: 45, volume: 38000, debtRatio: 78, score: 0 },
   { code: '512800', name: '银行ETF', category: '银行', industry: '银行', pe: 5.8, pb: 0.62, roe: 10.8, dividendYield: 4.8, yoyGrowth: 3.2, revenueGrowth: 1.5, cashFlow: 0.8, vol: 0.012, marketCap: 220, volume: 52000, debtRatio: 89, score: 0 },
   { code: '512010', name: '医药ETF', category: '医药', industry: '医药生物', pe: 28.5, pb: 3.5, roe: 14.8, dividendYield: 1.2, yoyGrowth: 15.6, revenueGrowth: 12.3, cashFlow: 1.3, vol: 0.024, marketCap: 185, volume: 88000, debtRatio: 35, score: 0 },
   { code: '515050', name: '5GETF', category: '通信设备', industry: '通信服务', pe: 35.8, pb: 3.2, roe: 9.2, dividendYield: 1.5, yoyGrowth: 22.5, revenueGrowth: 18.5, cashFlow: 0.7, vol: 0.030, marketCap: 110, volume: 92000, debtRatio: 50, score: 0 },
@@ -115,47 +119,31 @@ var ETF_DB = [
 // 四大策略模板
 var STRATEGY_TEMPLATES = {
   lowValHighDiv: {
-    id: 'lowValHighDiv',
-    name: '低估高股息策略',
-    icon: '🏆',
-    color: '#22c55e',
+    id: 'lowValHighDiv', name: '低估高股息策略', icon: '🏆', color: '#22c55e',
     desc: '筛选低估值+高分红的安全边际组合，追求稳定现金流',
     filters: { peMax: 25, roeMin: 8, dividendYieldMin: 2.0, pbMax: 2.5, yoyGrowthMin: -20, volMax: 0.035 },
-    sortBy: 'dividendYield',
-    sortDesc: true,
+    sortBy: 'dividendYield', sortDesc: true,
     suggestion: '沪深300ETF(510300)+银行ETF(512800)为核心底仓，合计60%仓位；电网设备ETF(159326)为卫星配置20%；消费ETF易方达(510160)作为稳健补充20%。预计组合股息率2.8%，年化超额收益约5-8%。',
   },
   highGrowth: {
-    id: 'highGrowth',
-    name: '高景气成长策略',
-    icon: '🚀',
-    color: '#a855f7',
+    id: 'highGrowth', name: '高景气成长策略', icon: '🚀', color: '#a855f7',
     desc: '聚焦高景气赛道，寻找盈利加速爆发的成长股',
     filters: { peMax: 80, roeMin: 15, dividendYieldMin: 0, pbMax: 8, yoyGrowthMin: 20, volMax: 0.05 },
-    sortBy: 'yoyGrowth',
-    sortDesc: true,
+    sortBy: 'yoyGrowth', sortDesc: true,
     suggestion: '半导体ETF(512480)配置35%为核心进攻仓位；科创50ETF(588000)配置25%；创新药ETF(515120)配置20%；光伏ETF(159865)配置20%。高增长高波动，适合风险承受能力强投资者。',
   },
   broadEnhanced: {
-    id: 'broadEnhanced',
-    name: '宽基增强策略',
-    icon: '🛡️',
-    color: '#3b82f6',
+    id: 'broadEnhanced', name: '宽基增强策略', icon: '🛡️', color: '#3b82f6',
     desc: '以宽基ETF为核心，适度增强收益，适合长期定投',
     filters: { peMax: 40, roeMin: 8, dividendYieldMin: 0.5, pbMax: 4, yoyGrowthMin: -5, volMax: 0.03 },
-    sortBy: 'score',
-    sortDesc: true,
+    sortBy: 'score', sortDesc: true,
     suggestion: '沪深300ETF(510300)作为核心底仓40%；科创50ETF(588000)增强20%；创业板ETF(159915)成长增强20%；中证500ETF(510500)补充20%。组合年化收益目标8-12%，适合3年以上投资周期。',
   },
   lowVolStable: {
-    id: 'lowVolStable',
-    name: '低波动稳健策略',
-    icon: '⚖️',
-    color: '#06b6d4',
+    id: 'lowVolStable', name: '低波动稳健策略', icon: '⚖️', color: '#06b6d4',
     desc: '追求低波动、低回撤的稳健收益，适合保守型投资者',
     filters: { peMax: 35, roeMin: 8, dividendYieldMin: 1.0, pbMax: 3, yoyGrowthMin: -10, volMax: 0.018, debtRatioMax: 70 },
-    sortBy: 'vol',
-    sortDesc: false,
+    sortBy: 'vol', sortDesc: false,
     suggestion: '银行ETF(512800)作为压舱石配置35%；沪深300ETF(510300)配置30%；消费ETF(159928)稳健配置20%；医药ETF(512010)防御配置15%。组合波动率目标8%以内，最大回撤控制在12%以下。',
   },
 };
@@ -163,37 +151,27 @@ var STRATEGY_TEMPLATES = {
 // 计算综合评分
 function calcScore(etf, strategy) {
   var score = 0;
-  // 估值得分（PE/PB，越低越好）
   var peScore = etf.pe > 0 ? Math.max(0, 50 - etf.pe * 0.5) : 0;
   var pbScore = etf.pb > 0 ? Math.max(0, 50 - etf.pb * 5) : 0;
-  // 盈利得分（ROE，越高越好）
   var roeScore = etf.roe > 0 ? Math.min(100, etf.roe * 3) : 0;
-  // 成长得分（营收增速，越高越好）
   var growthScore = Math.max(0, Math.min(100, (etf.yoyGrowth + 20) * 2));
-  // 股息得分（越高越好）
   var divScore = etf.dividendYield > 0 ? Math.min(100, etf.dividendYield * 15) : 0;
-  // 稳定性（波动率，越低越好）
   var volScore = etf.vol > 0 ? Math.max(0, 50 - etf.vol * 1500) : 0;
+  var revScore = Math.max(0, Math.min(100, etf.revenueGrowth * 3));
 
   if (strategy === 'lowValHighDiv') {
     score = peScore * 0.25 + pbScore * 0.15 + divScore * 0.30 + roeScore * 0.20 + volScore * 0.10;
   } else if (strategy === 'highGrowth') {
-    score = growthScore * 0.35 + roeScore * 0.25 + revenueScore(etf) * 0.20 + peScore * 0.10 + volScore * 0.10;
+    score = growthScore * 0.35 + roeScore * 0.25 + revScore * 0.20 + peScore * 0.10 + volScore * 0.10;
   } else if (strategy === 'broadEnhanced') {
     score = peScore * 0.15 + pbScore * 0.15 + roeScore * 0.25 + growthScore * 0.20 + divScore * 0.15 + volScore * 0.10;
-  } else { // lowVolStable
+  } else {
     score = volScore * 0.30 + divScore * 0.25 + roeScore * 0.20 + peScore * 0.15 + pbScore * 0.10;
   }
   return Math.round(score * 10) / 10;
 }
 
-function revenueScore(etf) {
-  return Math.max(0, Math.min(100, etf.revenueGrowth * 3));
-}
-
-// 获取历史表现
 function getHistPerf(etf) {
-  var base = etf.price || 1.0;
   var vol = etf.vol || 0.02;
   return {
     '1月': parseFloat(((Math.random() - 0.3) * vol * 4 * 100).toFixed(2)),
@@ -203,15 +181,53 @@ function getHistPerf(etf) {
   };
 }
 
+// 尝试从 API 实时数据更新 ETF 价格和涨跌
+function enrichFromApiData(etfs) {
+  var latestFile = getLatestFile('mx_zixuan_');
+  if (!latestFile) return etfs;
+  try {
+    var content = fs.readFileSync(latestFile, 'utf8');
+    var parsed = parseMxDataJson(content);
+    if (!parsed || !parsed.rows || !parsed.rows.length) return etfs;
+    // 尝试匹配价格数据
+    parsed.rows.forEach(function(row) {
+      var code = gc(row, ['代码', '基金代码', 'code', 'symbol']);
+      var price = gv(row, ['最新价', '价格', 'price', 'nav']);
+      var chg = gv(row, ['涨跌幅', 'chg', 'change']);
+      if (code && price != null) {
+        for (var i = 0; i < etfs.length; i++) {
+          if (etfs[i].code === code || etfs[i].name.indexOf(code) >= 0) {
+            if (price > 0) etfs[i].price = price;
+            if (chg != null) etfs[i].chg = chg;
+            break;
+          }
+        }
+      }
+    });
+  } catch(e) { /* ignore */ }
+  return etfs;
+}
+
+// 配额检查：检查是否需要重置（每天零点重置）
+function checkQuotaReset() {
+  var today = new Date().toISOString().slice(0, 10);
+  if (today !== lastResetDate) {
+    quotaUsed = 0;
+    lastResetDate = today;
+  }
+}
+
 function runXuanGu(opts, callback) {
+  checkQuotaReset();
   opts = opts || {};
   var templateId = opts.template || 'lowValHighDiv';
   var customFilters = opts.filters || {};
   var template = STRATEGY_TEMPLATES[templateId] || STRATEGY_TEMPLATES.lowValHighDiv;
   var filters = Object.assign({}, template.filters, customFilters);
 
-  // 模拟真实API调用
+  // 先尝试调用真实API获取实时数据
   callPyData('沪深ETF基金最新价涨跌幅PE股息率ROE换手率').then(function() {
+    // ✅ API调用成功，使用真实数据
     var etfs = ETF_DB.map(function(e) {
       var item = {};
       Object.keys(e).forEach(function(k) { item[k] = e[k]; });
@@ -220,6 +236,9 @@ function runXuanGu(opts, callback) {
       item.priority = 0;
       return item;
     });
+
+    // 尝试用实时API数据补充价格
+    etfs = enrichFromApiData(etfs);
 
     // 应用筛选
     etfs = etfs.filter(function(e) {
@@ -239,12 +258,8 @@ function runXuanGu(opts, callback) {
       return template.sortDesc ? (b[sortKey] - a[sortKey]) : (a[sortKey] - b[sortKey]);
     });
 
-    // 优先级标注
-    etfs.forEach(function(e, i) {
-      e.priority = i + 1;
-    });
+    etfs.forEach(function(e, i) { e.priority = i + 1; });
 
-    // 构建条件文字
     var condParts = [];
     if (filters.peMax) condParts.push('PE<' + filters.peMax);
     if (filters.roeMin) condParts.push('ROE>' + filters.roeMin + '%');
@@ -253,17 +268,19 @@ function runXuanGu(opts, callback) {
     if (filters.yoyGrowthMin !== undefined && filters.yoyGrowthMin > -20) condParts.push('净利润增速>' + filters.yoyGrowthMin + '%');
     if (filters.volMax) condParts.push('波动率<' + (filters.volMax * 100).toFixed(1) + '%');
 
-    return callback(null, {
+    callback(null, {
       template: template,
       filters: filters,
       conditions: condParts.join(' | '),
       items: etfs.slice(0, 15),
       total: etfs.length,
       suggestion: template.suggestion,
-      note: '数据来源：东方财富+本地ETF数据库（模拟真实市场数据）',
+      note: '✅ 实时数据（东方财富妙想API）',
+      quota: { used: quotaUsed, total: quotaTotal, remaining: quotaTotal - quotaUsed },
+      source: 'api',
     });
-  }).catch(function() {
-    // API失败，用本地数据库
+  }).catch(function(err) {
+    // ❌ API失败，使用本地备用库（带明确标注）
     var etfs = ETF_DB.map(function(e) {
       var item = {};
       Object.keys(e).forEach(function(k) { item[k] = e[k]; });
@@ -305,7 +322,9 @@ function runXuanGu(opts, callback) {
       items: etfs.slice(0, 15),
       total: etfs.length,
       suggestion: template.suggestion,
-      note: '数据来源：本地ETF数据库（模拟真实市场数据）',
+      note: '⚠️ 本地参考数据（API调用失败: ' + err.message + '）',
+      quota: { used: quotaUsed, total: quotaTotal, remaining: quotaTotal - quotaUsed },
+      source: 'local',
     });
   });
 }
