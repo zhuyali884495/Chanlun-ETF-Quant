@@ -1,17 +1,219 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchRealtimeQuote } from '../data/DataProvider.jsx';
 import { fetchChanAnalysis, fetchSentimentData, fetchGridData, fetchCapitalData, fetchRiskData } from '../api/index.js';
+import { createChart } from 'lightweight-charts';
 
 const C = {
-  green: 'var(--up)', red: 'var(--down)', yellow: '#eab308',
-  blue: 'var(--primary)', purple: 'var(--primary)', cyan: 'var(--primary)',
-  card: 'var(--bg-card)', border: 'var(--border)',
-  text: 'var(--text)', muted: 'var(--text-muted)',
+  green: 'var(--up)',
+  red: 'var(--down)',
+  yellow: '#eab308',
+  blue: 'var(--primary)',
+  purple: 'var(--primary)',
+  cyan: 'var(--primary)',
+  card: 'var(--bg-card)',
+  border: 'var(--border)',
+  text: 'var(--text)',
+  muted: 'var(--text-muted)',
   orange: '#f97316',
 };
 
 function fmtPct(n) { return n != null ? (n >= 0 ? `+${n.toFixed(2)}%` : `${n.toFixed(2)}%`) : '-'; }
 function fmtMoney(n) { return n != null ? n.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'; }
+
+// ─── 指标计算 ───────────────────────────────────────────────
+function calcEMA(data, period) {
+  const k = 2 / (period + 1);
+  const result = [];
+  let ema = data[0];
+  result.push(ema);
+  for (let i = 1; i < data.length; i++) {
+    ema = data[i] * k + ema * (1 - k);
+    result.push(ema);
+  }
+  return result;
+}
+
+function calcMACD(closes) {
+  const ema12 = calcEMA(closes, 12);
+  const ema26 = calcEMA(closes, 26);
+  const dif = closes.map((_, i) => ema12[i] - ema26[i]);
+  const dea = calcEMA(dif, 9);
+  const macd = dif.map((v, i) => (v - dea[i]) * 2);
+  return { dif, dea, macd };
+}
+
+function calcRSI(closes, period = 14) {
+  const changes = closes.map((v, i) => (i === 0 ? 0 : v - closes[i - 1]));
+  const gains = changes.map(v => (v > 0 ? v : 0));
+  const losses = changes.map(v => (v < 0 ? -v : 0));
+  const result = [];
+  let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = 0; i < period; i++) result.push(null);
+  if (avgLoss === 0) { result.push(100); }
+  else { result.push(100 - 100 / (1 + avgGain / avgLoss)); }
+  for (let i = period; i < closes.length - 1; i++) {
+    avgGain = (avgGain * (period - 1) + gains[i + 1]) / period;
+    avgLoss = (avgLoss * (period - 1) + losses[i + 1]) / period;
+    if (avgLoss === 0) result.push(100);
+    else result.push(100 - 100 / (1 + avgGain / avgLoss));
+  }
+  return result;
+}
+
+// ─── K线图 + MACD + RSI ────────────────────────────────────
+function KLineChart({ code }) {
+  const containerRef = useRef(null);
+  const macdRef = useRef(null);
+  const rsiRef = useRef(null);
+  const chartRef = useRef(null);
+  const macdChartRef = useRef(null);
+  const rsiChartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const macdHistogramRef = useRef(null);
+  const difSeriesRef = useRef(null);
+  const deaSeriesRef = useRef(null);
+  const rsiSeriesRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const initCharts = useCallback(() => {
+    if (!containerRef.current || !macdRef.current || !rsiRef.current) return;
+
+    const chartOptions = { layout: { background: { color: 'transparent' }, textColor: '#9ca3af' }, grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } }, crosshair: { mode: 'Normal' }, timeScale: { borderColor: '#374151' }, rightPriceScale: { borderColor: '#374151' } };
+
+    // K-line main chart
+    if (!chartRef.current) {
+      chartRef.current = createChart(containerRef.current, { ...chartOptions, width: containerRef.current.clientWidth, height: 280 });
+      candleSeriesRef.current = chartRef.current.addCandlestickSeries({ upColor: C.green, downColor: C.red, borderUpColor: C.green, borderDownColor: C.red, wickUpColor: C.green, wickDownColor: C.red });
+    }
+
+    // MACD subchart
+    if (!macdChartRef.current) {
+      macdChartRef.current = createChart(macdRef.current, { ...chartOptions, width: macdRef.current.clientWidth, height: 100 });
+      macdHistogramRef.current = macdChartRef.current.addHistogramSeries({ color: '#06b6d4', priceFormat: { type: 'price' }, priceScaleId: 'right' });
+      difSeriesRef.current = macdChartRef.current.addLineSeries({ color: '#f97316', lineWidth: 1, priceScaleId: 'right' });
+      deaSeriesRef.current = macdChartRef.current.addLineSeries({ color: '#a855f7', lineWidth: 1, priceScaleId: 'right' });
+      macdChartRef.current.timeScale().subscribeVisibleLogicalRangeChange(() => {});
+      chartRef.current.timeScale().subscribeVisibleLogicalRangeChange(range => {
+        if (range) macdChartRef.current.timeScale().setVisibleLogicalRange(range);
+      });
+    }
+
+    // RSI subchart
+    if (!rsiChartRef.current) {
+      rsiChartRef.current = createChart(rsiRef.current, { ...chartOptions, width: rsiRef.current.clientWidth, height: 80 });
+      rsiSeriesRef.current = rsiChartRef.current.addLineSeries({ color: '#eab308', lineWidth: 1, priceScaleId: 'right' });
+      rsiChartRef.current.timeScale().subscribeVisibleLogicalRangeChange(() => {});
+      chartRef.current.timeScale().subscribeVisibleLogicalRangeChange(range => {
+        if (range) rsiChartRef.current.timeScale().setVisibleLogicalRange(range);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    initCharts();
+
+    const fetchData = async () => {
+      try {
+        const d = await fetchChanAnalysis(code, '日线');
+        const klines = d?.klineData;
+        if (!klines || klines.length === 0) { setError('暂无数据'); setLoading(false); return; }
+
+        const sorted = [...klines].sort((a, b) => a.date.localeCompare(b.date));
+        const candleData = sorted.map(k => ({ time: k.date, open: k.open, high: k.high, low: k.low, close: k.close }));
+        const closes = sorted.map(k => k.close);
+
+        const { dif, dea, macd } = calcMACD(closes);
+        const rsi = calcRSI(closes);
+
+        const macdData = dif.map((v, i) => ({ time: sorted[i].date, value: macd[i] || 0, color: macd[i] >= 0 ? (macd[i] > 0 ? C.green : '#4b5563') : (macd[i] < 0 ? C.red : '#4b5563') }));
+        const difData = dif.map((v, i) => ({ time: sorted[i].date, value: v }));
+        const deaData = dea.map((v, i) => ({ time: sorted[i].date, value: v }));
+        const rsiData = rsi.map((v, i) => v != null ? { time: sorted[i].date, value: v } : null).filter(Boolean);
+
+        if (candleSeriesRef.current) candleSeriesRef.current.setData(candleData);
+        if (macdHistogramRef.current) macdHistogramRef.current.setData(macdData);
+        if (difSeriesRef.current) difSeriesRef.current.setData(difData);
+        if (deaSeriesRef.current) deaSeriesRef.current.setData(deaData);
+        if (rsiSeriesRef.current) rsiSeriesRef.current.setData(rsiData);
+
+        chartRef.current?.timeScale().fitContent();
+        macdChartRef.current?.timeScale().fitContent();
+        rsiChartRef.current?.timeScale().fitContent();
+
+        setLoading(false);
+      } catch (e) {
+        setError(e.message);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // ResizeObserver for each chart
+    const mainObserver = new ResizeObserver(() => {
+      if (containerRef.current && chartRef.current) chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+    });
+    const macdObserver = new ResizeObserver(() => {
+      if (macdRef.current && macdChartRef.current) macdChartRef.current.applyOptions({ width: macdRef.current.clientWidth });
+    });
+    const rsiObserver = new ResizeObserver(() => {
+      if (rsiRef.current && rsiChartRef.current) rsiChartRef.current.applyOptions({ width: rsiRef.current.clientWidth });
+    });
+
+    if (containerRef.current) mainObserver.observe(containerRef.current);
+    if (macdRef.current) macdObserver.observe(macdRef.current);
+    if (rsiRef.current) rsiObserver.observe(rsiRef.current);
+
+    return () => {
+      mainObserver.disconnect();
+      macdObserver.disconnect();
+      rsiObserver.disconnect();
+      chartRef.current?.remove();
+      macdChartRef.current?.remove();
+      rsiChartRef.current?.remove();
+      chartRef.current = null;
+      macdChartRef.current = null;
+      rsiChartRef.current = null;
+    };
+  }, [code, initCharts]);
+
+  if (loading) return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 12 }}>📈 K线图</div>
+      <div style={{ height: 460, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted }}>加载中...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 12 }}>📈 K线图</div>
+      <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.red, fontSize: 13 }}>{error}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>📈 K线图</div>
+      <div style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+        <div ref={containerRef} style={{ background: '#0d1117' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 4, background: '#1a1a2e' }}>
+          <span style={{ fontSize: 9, color: '#6b7280' }}>─ MACD ─</span>
+        </div>
+        <div ref={macdRef} style={{ background: '#0d1117' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 4, background: '#1a1a2e' }}>
+          <span style={{ fontSize: 9, color: '#6b7280' }}>─ RSI(14) ─</span>
+        </div>
+        <div ref={rsiRef} style={{ background: '#0d1117' }} />
+      </div>
+      <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 10, color: C.muted }}>
+        <span>MACD: <span style={{ color: C.orange }}>橙DIF</span> <span style={{ color: C.purple }}>紫DEA</span></span>
+        <span>RSI: <span style={{ color: C.yellow }}>黄线</span></span>
+      </div>
+    </div>
+  );
+}
 
 // ─── 模块1：基础行情 ─────────────────────────────────────────
 function QuoteCard({ code, name }) {
@@ -97,7 +299,6 @@ function ChanCard({ code }) {
           <div style={{ fontSize: 12, color: C.text }}>{s.action || '-'}</div>
         </div>
       </div>
-      {/* 买卖点 */}
       {data.buyPoints?.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>买点信号</div>
@@ -162,7 +363,6 @@ function SentimentCard({ code }) {
           <div style={{ fontSize: 12, color: C.muted }}>{data.trend || data.summary || '-'}</div>
         </div>
       </div>
-      {/* 五维度 */}
       {data.dimensions && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {Object.entries(data.dimensions).slice(0, 6).map(([k, v]) => (
@@ -331,6 +531,7 @@ export default function StockAnalysis({ code }) {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <KLineChart code={code} key={`kline-${code}`} />
         <QuoteCard code={code} key={`quote-${code}`} />
         <ChanCard code={code} key={`chan-${code}`} />
         <SentimentCard code={code} key={`sentiment-${code}`} />
